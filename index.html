@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIRX — BookMyFlight</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#0a0a0f;
+  --ink2:#13131a;
+  --ink3:#1c1c28;
+  --surface:#242436;
+  --surface2:#2e2e45;
+  --line:#3a3a58;
+  --line2:#2a2a42;
+  --sky:#5b8fff;
+  --sky2:#3d6eea;
+  --amber:#ffb347;
+  --mint:#3dffa0;
+  --rose:#ff5f7e;
+  --lavender:#a78bfa;
+  --text:#e8e8f5;
+  --text2:#9090b8;
+  --text3:#5a5a80;
+  --r:8px;
+}
+
+html{scroll-behavior:smooth}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* noise texture overlay */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.03;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ── AUTH ── */
+#auth{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:2rem;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(91,143,255,.12) 0%,transparent 70%);
+}
+
+.auth-card{
+  width:100%;max-width:400px;
+  background:var(--ink2);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:2.5rem;
+  box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset;
+  position:relative;overflow:hidden;
+}
+
+.auth-card::before{
+  content:'';position:absolute;top:-80px;right:-80px;
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(91,143,255,.2),transparent 70%);
+  pointer-events:none;
+}
+
+.brand{text-align:center;margin-bottom:2rem}
+.brand-plane{
+  font-size:2.5rem;display:block;margin-bottom:.75rem;
+  animation:hover-plane 3s ease-in-out infinite;
+}
+@keyframes hover-plane{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-6px) rotate(5deg)}}
+
+.brand-name{
+  font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;
+  letter-spacing:-.02em;color:var(--text);
+  display:block;line-height:1;
+}
+.brand-name span{color:var(--sky)}
+.brand-sub{font-size:.7rem;color:var(--text3);letter-spacing:.2em;margin-top:.4rem;text-transform:uppercase}
+
+.tab-row{
+  display:flex;background:var(--ink3);border-radius:10px;
+  padding:4px;margin-bottom:1.5rem;gap:4px;
+}
+.tab-btn{
+  flex:1;padding:.5rem;background:none;border:none;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:500;
+  color:var(--text2);border-radius:7px;transition:all .2s;
+}
+.tab-btn.active{background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:.7rem;font-weight:500;color:var(--text2);margin-bottom:.4rem;letter-spacing:.05em;text-transform:uppercase}
+.field input{
+  width:100%;padding:.7rem 1rem;
+  background:var(--ink3);border:1px solid var(--line2);border-radius:10px;
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.field input:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(91,143,255,.12)}
+.field input::placeholder{color:var(--text3)}
+
+.err-msg{color:var(--rose);font-size:.75rem;margin-bottom:.75rem;display:none;padding:.5rem .75rem;background:rgba(255,95,126,.08);border-radius:8px;border:1px solid rgba(255,95,126,.2)}
+.ok-msg{color:var(--mint);font-size:.75rem;margin-bottom:.75rem;display:none;padding:.5rem .75rem;background:rgba(61,255,160,.08);border-radius:8px;border:1px solid rgba(61,255,160,.2)}
+
+.btn-primary{
+  width:100%;padding:.8rem;border:none;border-radius:10px;cursor:pointer;
+  background:linear-gradient(135deg,var(--sky),var(--sky2));
+  color:#fff;font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;
+  letter-spacing:.05em;transition:all .2s;box-shadow:0 4px 20px rgba(91,143,255,.3);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(91,143,255,.4)}
+.btn-primary:active{transform:translateY(0)}
+
+.demo-hint{text-align:center;font-size:.68rem;color:var(--text3);margin-top:1rem}
+.demo-hint code{color:var(--sky);background:rgba(91,143,255,.1);padding:.1rem .4rem;border-radius:4px}
+
+/* ── MAIN APP ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+
+/* TOPBAR */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.9rem 2rem;
+  background:rgba(10,10,15,.9);
+  border-bottom:1px solid var(--line2);
+  backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:100;
+}
+.tb-brand{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:-.01em}
+.tb-brand span{color:var(--sky)}
+.tb-right{display:flex;align-items:center;gap:.75rem}
+.tb-user{
+  font-size:.75rem;color:var(--text2);
+  background:var(--ink3);border:1px solid var(--line2);
+  padding:.3rem .8rem;border-radius:20px;
+  font-family:'DM Mono',monospace;
+}
+.btn-logout{
+  padding:.35rem .9rem;background:none;border:1px solid var(--line);
+  border-radius:8px;cursor:pointer;color:var(--text2);font-size:.75rem;
+  font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.btn-logout:hover{border-color:var(--rose);color:var(--rose)}
+
+/* SIDEBAR + BODY */
+.layout{display:flex;flex:1;min-height:0}
+
+.sidebar{
+  width:220px;flex-shrink:0;
+  background:var(--ink2);
+  border-right:1px solid var(--line2);
+  padding:1.5rem 1rem;
+  display:flex;flex-direction:column;gap:.25rem;
+}
+
+.nav-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.65rem .9rem;border-radius:10px;
+  cursor:pointer;border:none;background:none;
+  color:var(--text2);font-family:'DM Sans',sans-serif;
+  font-size:.82rem;font-weight:500;
+  transition:all .2s;width:100%;text-align:left;
+}
+.nav-item:hover{background:var(--ink3);color:var(--text)}
+.nav-item.active{background:rgba(91,143,255,.12);color:var(--sky)}
+.nav-item .ni{width:18px;text-align:center;font-size:1rem}
+.nav-item .step-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--line);margin-left:auto;flex-shrink:0;
+  transition:background .3s;
+}
+.nav-item.done .step-dot{background:var(--mint)}
+.nav-item.active .step-dot{background:var(--sky)}
+
+.sidebar-footer{margin-top:auto;padding-top:1rem;border-top:1px solid var(--line2)}
+.progress-label{font-size:.65rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem}
+.progress-bar{height:4px;background:var(--line2);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--lavender));border-radius:2px;transition:width .5s ease}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:2rem}
+.page{display:none;animation:fadeUp .3s ease}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* SECTION HEADER */
+.sec-hdr{margin-bottom:1.75rem}
+.sec-hdr h2{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.sec-hdr p{font-size:.82rem;color:var(--text2);margin-top:.3rem}
+
+/* ── DASHBOARD ── */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:1rem;margin-bottom:2rem;
+}
+.stat{
+  background:var(--ink2);border:1px solid var(--line2);border-radius:14px;
+  padding:1.4rem;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.stat:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.stat-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
+.stat-icon{font-size:1.5rem;margin-bottom:.6rem}
+.stat-val{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800}
+.stat-lbl{font-size:.65rem;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-top:.2rem}
+
+.step-track{
+  background:var(--ink2);border:1px solid var(--line2);border-radius:14px;
+  padding:1.5rem;margin-bottom:2rem;
+}
+.step-track-title{font-size:.7rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.2rem}
+.steps-row{display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:.5rem}
+.step-node{display:flex;flex-direction:column;align-items:center;gap:.4rem;min-width:80px}
+.step-circle{
+  width:36px;height:36px;border-radius:50%;
+  border:2px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:.75rem;font-weight:500;
+  color:var(--text3);transition:all .3s;background:var(--ink2);
+}
+.step-node.done .step-circle{border-color:var(--mint);color:var(--mint);background:rgba(61,255,160,.08)}
+.step-node.active .step-circle{border-color:var(--sky);color:var(--sky);background:rgba(91,143,255,.1);box-shadow:0 0 16px rgba(91,143,255,.2)}
+.step-lbl{font-size:.6rem;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;text-align:center;transition:color .3s}
+.step-node.done .step-lbl{color:var(--mint)}
+.step-node.active .step-lbl{color:var(--sky)}
+.step-connector{flex:1;height:1px;background:var(--line2);min-width:20px;margin:0 4px;margin-bottom:20px;transition:background .3s}
+.step-connector.done{background:var(--mint)}
+
+.info-banner{
+  display:flex;align-items:center;gap:.75rem;
+  background:rgba(91,143,255,.08);border:1px solid rgba(91,143,255,.2);
+  border-radius:10px;padding:.8rem 1rem;font-size:.8rem;color:var(--text2);
+}
+
+/* ── PASSENGER ── */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;margin-bottom:1.5rem}
+
+/* ── FLIGHTS ── */
+.flight-type-toggle{display:flex;gap:.5rem;margin-bottom:1.5rem}
+.toggle-btn{
+  padding:.55rem 1.2rem;background:var(--ink2);
+  border:1px solid var(--line2);border-radius:8px;cursor:pointer;
+  font-size:.78rem;font-weight:500;color:var(--text2);
+  font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.toggle-btn.active{background:rgba(91,143,255,.12);border-color:var(--sky);color:var(--sky)}
+
+.table-card{
+  background:var(--ink2);border:1px solid var(--line2);border-radius:14px;
+  overflow:hidden;margin-bottom:1.5rem;
+}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{
+  padding:.7rem 1rem;
+  background:var(--ink3);font-family:'DM Mono',monospace;
+  font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text3);text-align:left;white-space:nowrap;
+  border-bottom:1px solid var(--line2);
+}
+tbody td{
+  padding:.75rem 1rem;font-size:.8rem;
+  border-bottom:1px solid var(--line2);
+  vertical-align:middle;
+}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:background .15s}
+tbody tr:hover td{background:rgba(255,255,255,.02)}
+tbody tr.row-selected td{background:rgba(91,143,255,.06)}
+
+.flt-id{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--sky)}
+.flt-num{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--amber)}
+.flt-time{font-size:.72rem;color:var(--text2)}
+.sel-btn{
+  padding:.35rem .8rem;background:none;border:1px solid var(--line);
+  border-radius:7px;cursor:pointer;font-size:.68rem;font-weight:600;
+  color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap;
+}
+.sel-btn:hover,.sel-btn.picked{border-color:var(--sky);color:var(--sky);background:rgba(91,143,255,.08)}
+.sel-btn.picked::before{content:'✓ '}
+
+.class-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.class-card{
+  background:var(--ink2);border:1px solid var(--line2);border-radius:14px;
+  padding:1.5rem;text-align:center;cursor:pointer;transition:all .25s;
+}
+.class-card:hover,.class-card.chosen{border-color:var(--sky);background:rgba(91,143,255,.06)}
+.class-card.chosen{box-shadow:0 0 0 1px var(--sky)}
+.class-name{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;margin-bottom:.4rem}
+.class-price{font-size:1.1rem;font-weight:600;color:var(--amber)}
+.class-avail{font-size:.65rem;color:var(--text3);margin-top:.3rem}
+
+.pax-row{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.pax-row label{font-size:.75rem;color:var(--text2);font-weight:500}
+.pax-row input{
+  width:80px;padding:.5rem .75rem;
+  background:var(--ink3);border:1px solid var(--line2);border-radius:8px;
+  color:var(--text);font-size:.9rem;outline:none;
+  font-family:'DM Mono',monospace;
+}
+.ticket-calc{
+  display:none;align-items:center;gap:.5rem;
+  font-size:.8rem;color:var(--sky);
+  background:rgba(91,143,255,.08);border:1px solid rgba(91,143,255,.2);
+  border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;
+}
+
+/* ── FOOD ── */
+.outlet-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.outlet-pill{
+  padding:.5rem 1.1rem;background:var(--ink2);
+  border:1px solid var(--line2);border-radius:20px;cursor:pointer;
+  font-size:.78rem;font-weight:500;color:var(--text2);
+  font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.outlet-pill.active{background:rgba(91,143,255,.12);border-color:var(--sky);color:var(--sky)}
+
+.food-layout{display:grid;grid-template-columns:1fr 270px;gap:1.5rem;align-items:start}
+@media(max-width:800px){.food-layout{grid-template-columns:1fr}}
+
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem}
+.menu-card{
+  background:var(--ink2);border:1px solid var(--line2);border-radius:12px;
+  padding:1rem;transition:border-color .2s;
+}
+.menu-card:hover{border-color:var(--surface2)}
+.menu-code{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--text3);margin-bottom:.3rem}
+.menu-name{font-size:.82rem;font-weight:500;margin-bottom:.4rem;line-height:1.3}
+.menu-price{font-size:.9rem;color:var(--amber);font-weight:600;margin-bottom:.75rem}
+.qty-row{display:flex;align-items:center;gap:.5rem}
+.qty-btn{
+  width:28px;height:28px;border-radius:7px;background:var(--ink3);
+  border:1px solid var(--line2);cursor:pointer;color:var(--text);
+  font-size:1.1rem;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+}
+.qty-btn:hover{border-color:var(--sky);color:var(--sky)}
+.qty-num{font-family:'DM Mono',monospace;font-size:.9rem;min-width:1.5rem;text-align:center}
+
+.cart-box{
+  background:var(--ink2);border:1px solid var(--line2);border-radius:14px;
+  padding:1.2rem;position:sticky;top:80px;
+}
+.cart-title{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;margin-bottom:1rem}
+.cart-empty{font-size:.75rem;color:var(--text3);padding:.5rem 0}
+.cart-line{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--line2);font-size:.75rem}
+.cart-line:last-of-type{border-bottom:none}
+.cart-totals{border-top:1px solid var(--line);margin-top:.75rem;padding-top:.75rem}
+.cart-tot-row{display:flex;justify-content:space-between;font-size:.78rem;padding:.2rem 0}
+.cart-tot-row.grand{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--amber);margin-top:.4rem}
+
+/* ── LUGGAGE ── */
+.lugg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem}
+.lugg-card{
+  background:var(--ink2);border:1px solid var(--line2);border-radius:14px;
+  padding:1.4rem;text-align:center;cursor:pointer;transition:all .25s;
+}
+.lugg-card:hover,.lugg-card.picked{border-color:var(--amber);background:rgba(255,179,71,.06)}
+.lugg-card.picked{box-shadow:0 0 0 1px var(--amber)}
+.lugg-icon{font-size:1.8rem;margin-bottom:.5rem}
+.lugg-kg{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--amber)}
+.lugg-tag{font-size:.65rem;color:var(--text2);margin:.2rem 0}
+.lugg-price{font-size:.8rem;font-weight:500;color:var(--text)}
+
+/* ── CHECKOUT ── */
+.bill-card{
+  background:var(--ink2);border:1px solid var(--line2);border-radius:14px;
+  overflow:hidden;margin-bottom:1.5rem;
+}
+.bill-head{
+  background:var(--ink3);padding:1rem 1.4rem;
+  font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;
+  border-bottom:1px solid var(--line2);
+}
+.bill-body{padding:1.2rem 1.4rem}
+.bill-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--line2);font-size:.8rem}
+.bill-row:last-child{border-bottom:none}
+.bill-row-lbl{color:var(--text2)}
+.bill-divider{height:1px;background:var(--line);margin:.5rem 0}
+.bill-grand{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:1rem 1.4rem;background:rgba(255,179,71,.06);border-top:1px solid var(--line);
+}
+.bill-grand-lbl{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700}
+.bill-grand-val{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--amber)}
+
+.pay-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin:1.5rem 0}
+.pay-card{
+  background:var(--ink2);border:1px solid var(--line2);border-radius:14px;
+  padding:1.4rem;cursor:pointer;text-align:center;transition:all .25s;
+}
+.pay-card:hover,.pay-card.chosen{border-color:var(--mint);background:rgba(61,255,160,.05)}
+.pay-card.chosen{box-shadow:0 0 0 1px var(--mint)}
+.pay-icon{font-size:2rem;margin-bottom:.5rem}
+.pay-name{font-size:.85rem;font-weight:600;margin-bottom:.25rem}
+.pay-desc{font-size:.65rem;color:var(--text2)}
+
+/* ── SUCCESS ── */
+.success-wrap{text-align:center;padding:3rem 1rem;max-width:500px;margin:0 auto}
+.success-emoji{font-size:4rem;animation:pop .5s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+.success-h{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--mint);margin:.75rem 0 .5rem}
+.booking-ref{
+  font-family:'DM Mono',monospace;font-size:1rem;color:var(--amber);
+  background:rgba(255,179,71,.1);border:1px solid rgba(255,179,71,.3);
+  border-radius:8px;padding:.5rem 1.5rem;display:inline-block;margin-bottom:1.5rem;
+}
+.feedback-box{background:var(--ink2);border:1px solid var(--line2);border-radius:14px;padding:1.5rem;text-align:left;margin-bottom:1.5rem}
+.feedback-box label{font-size:.75rem;color:var(--text2);display:block;margin-bottom:.5rem}
+.feedback-box textarea{
+  width:100%;padding:.75rem;background:var(--ink3);border:1px solid var(--line2);
+  border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;
+  resize:vertical;min-height:80px;outline:none;
+}
+.feedback-box textarea:focus{border-color:var(--sky)}
+
+/* ── SHARED BUTTONS ── */
+.btn-action{
+  padding:.7rem 1.6rem;border:none;border-radius:10px;cursor:pointer;
+  font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;
+  letter-spacing:.04em;transition:all .2s;
+}
+.btn-sky{background:linear-gradient(135deg,var(--sky),var(--sky2));color:#fff;box-shadow:0 4px 16px rgba(91,143,255,.3)}
+.btn-sky:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(91,143,255,.4)}
+.btn-mint{background:linear-gradient(135deg,var(--mint),#2ee880);color:var(--ink);box-shadow:0 4px 16px rgba(61,255,160,.25)}
+.btn-mint:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(61,255,160,.35)}
+.btn-amber{background:linear-gradient(135deg,var(--amber),#e8990a);color:var(--ink);box-shadow:0 4px 16px rgba(255,179,71,.25)}
+.btn-amber:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,179,71,.35)}
+.btn-ghost{background:none;border:1px solid var(--line);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--text);color:var(--text)}
+
+/* ── ALERTS ── */
+.alert{display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;border-radius:10px;font-size:.78rem;margin-bottom:1rem}
+.alert-info{background:rgba(91,143,255,.08);border:1px solid rgba(91,143,255,.2);color:var(--sky)}
+.alert-warn{background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.2);color:var(--amber)}
+.alert-ok{background:rgba(61,255,160,.08);border:1px solid rgba(61,255,160,.2);color:var(--mint)}
+.alert-err{background:rgba(255,95,126,.08);border:1px solid rgba(255,95,126,.2);color:var(--rose)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--ink2)}
+::-webkit-scrollbar-thumb{background:var(--surface);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--surface2)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  .sidebar{display:none}
+  .class-cards{grid-template-columns:1fr}
+  .content{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ AUTH ═══ -->
+<div id="auth">
+  <div class="auth-card">
+    <div class="brand">
+      <span class="brand-plane">✈️</span>
+      <span class="brand-name">AIR<span>X</span></span>
+      <span class="brand-sub">BookMyFlight System</span>
+    </div>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" id="tabSignup" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <div id="loginForm">
+      <div class="field"><label>Username</label><input id="lu" value="test" placeholder="Username"></div>
+      <div class="field"><label>Password</label><input id="lp" type="password" value="wow" placeholder="Password"></div>
+      <div class="err-msg" id="loginErr">⚠ Incorrect credentials. Please try again.</div>
+      <button class="btn-primary" onclick="doLogin()">▶ Launch Booking</button>
+      <p class="demo-hint">Demo: <code>test</code> / <code>wow</code></p>
+    </div>
+    <div id="signupForm" style="display:none">
+      <div class="field"><label>Username</label><input id="nu" placeholder="Choose username"></div>
+      <div class="field"><label>Password</label><input id="np" type="password" placeholder="Choose password"></div>
+      <div class="ok-msg" id="signupOk">✓ Account created! Please log in.</div>
+      <button class="btn-primary" onclick="doSignUp()">◆ Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app">
+  <div class="topbar">
+    <div class="tb-brand">AIR<span>X</span> BookMyFlight</div>
+    <div class="tb-right">
+      <span class="tb-user" id="tbUser">PASSENGER</span>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <button class="nav-item active" id="nav-dashboard" onclick="gotoPage('dashboard')"><span class="ni">🛸</span> Dashboard <span class="step-dot"></span></button>
+      <button class="nav-item" id="nav-passenger" onclick="gotoPage('passenger')"><span class="ni">👤</span> Passenger <span class="step-dot"></span></button>
+      <button class="nav-item" id="nav-flights" onclick="gotoPage('flights')"><span class="ni">✈️</span> Flights <span class="step-dot"></span></button>
+      <button class="nav-item" id="nav-food" onclick="gotoPage('food')"><span class="ni">🍽</span> Food Court <span class="step-dot"></span></button>
+      <button class="nav-item" id="nav-luggage" onclick="gotoPage('luggage')"><span class="ni">🧳</span> Luggage <span class="step-dot"></span></button>
+      <button class="nav-item" id="nav-checkout" onclick="gotoPage('checkout')"><span class="ni">💳</span> Checkout <span class="step-dot"></span></button>
+      <div class="sidebar-footer">
+        <div class="progress-label">Booking Progress</div>
+        <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+      </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="pg-dashboard">
+        <div class="sec-hdr">
+          <h2>Mission Control</h2>
+          <p>Your complete booking overview at a glance</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat"><div class="stat-accent" style="background:var(--sky)"></div><div class="stat-icon">✈️</div><div class="stat-val" id="dFlight">—</div><div class="stat-lbl">Flight Selected</div></div>
+          <div class="stat"><div class="stat-accent" style="background:var(--amber)"></div><div class="stat-icon">🎫</div><div class="stat-val" id="dTicket">₹0</div><div class="stat-lbl">Ticket Cost</div></div>
+          <div class="stat"><div class="stat-accent" style="background:var(--mint)"></div><div class="stat-icon">🍽</div><div class="stat-val" id="dFood">₹0</div><div class="stat-lbl">Food Total</div></div>
+          <div class="stat"><div class="stat-accent" style="background:var(--lavender)"></div><div class="stat-icon">🧳</div><div class="stat-val" id="dLugg">₹0</div><div class="stat-lbl">Luggage</div></div>
+          <div class="stat" style="grid-column:span 1"><div class="stat-accent" style="background:var(--rose)"></div><div class="stat-icon">💰</div><div class="stat-val" id="dTotal" style="color:var(--amber)">₹0</div><div class="stat-lbl">Grand Total</div></div>
+        </div>
+
+        <div class="step-track">
+          <div class="step-track-title">Booking Steps</div>
+          <div class="steps-row" id="stepsRow">
+            <div class="step-node" id="sn0"><div class="step-circle">1</div><div class="step-lbl">Passenger</div></div>
+            <div class="step-connector" id="sc0"></div>
+            <div class="step-node" id="sn1"><div class="step-circle">2</div><div class="step-lbl">Flight</div></div>
+            <div class="step-connector" id="sc1"></div>
+            <div class="step-node" id="sn2"><div class="step-circle">3</div><div class="step-lbl">Food</div></div>
+            <div class="step-connector" id="sc2"></div>
+            <div class="step-node" id="sn3"><div class="step-circle">4</div><div class="step-lbl">Luggage</div></div>
+            <div class="step-connector" id="sc3"></div>
+            <div class="step-node" id="sn4"><div class="step-circle">5</div><div class="step-lbl">Checkout</div></div>
+          </div>
+        </div>
+
+        <div class="info-banner">ℹ️ Complete all steps in order: Passenger → Flights → Food Court → Luggage → Checkout</div>
+      </div>
+
+      <!-- PASSENGER -->
+      <div class="page" id="pg-passenger">
+        <div class="sec-hdr"><h2>👤 Passenger Registration</h2><p>Enter your travel details below</p></div>
+        <div class="form-grid">
+          <div class="field"><label>Full Name</label><input id="pName" placeholder="e.g. Arjun Sharma"></div>
+          <div class="field"><label>Email Address</label><input id="pEmail" type="email" placeholder="arjun@example.com"></div>
+          <div class="field"><label>Phone Number</label><input id="pPhone" placeholder="+91 99999 00000"></div>
+          <div class="field"><label>Passport / ID Number</label><input id="pPass" placeholder="L1234567"></div>
+        </div>
+        <div class="alert alert-ok" id="pMsg" style="display:none">✓ Passenger registered successfully! Proceed to select your flight.</div>
+        <button class="btn-action btn-mint" onclick="savePassenger()">◆ Register Passenger</button>
+      </div>
+
+      <!-- FLIGHTS -->
+      <div class="page" id="pg-flights">
+        <div class="sec-hdr"><h2>✈️ Flight Selection</h2><p>Choose your route and seat class</p></div>
+        <div class="flight-type-toggle">
+          <button class="toggle-btn active" id="togDom" onclick="switchFltType('dom')">🇮🇳 Domestic (20)</button>
+          <button class="toggle-btn" id="togIntl" onclick="switchFltType('intl')">🌍 International (20)</button>
+        </div>
+
+        <div id="secDom">
+          <div class="alert alert-info" style="margin-bottom:1rem">Browse 20 domestic routes across major Indian cities.</div>
+          <div class="table-card"><div class="table-scroll"><table id="tblDom"></table></div></div>
+        </div>
+        <div id="secIntl" style="display:none">
+          <div class="alert alert-warn" style="margin-bottom:1rem">Browse 20 international routes. Passport required.</div>
+          <div class="table-card"><div class="table-scroll"><table id="tblIntl"></table></div></div>
+        </div>
+
+        <div id="seatSec" style="display:none">
+          <div class="sec-hdr" style="margin-top:2rem"><h2>🎫 Select Seat Class</h2><p id="seatInfo">—</p></div>
+          <div class="class-cards" id="classCards"></div>
+          <div class="pax-row">
+            <label>Passengers:</label>
+            <input type="number" id="numPax" value="1" min="1" max="99" oninput="recalcTicket()">
+          </div>
+          <div class="ticket-calc" id="tickCalc"></div>
+          <button class="btn-action btn-amber" onclick="confirmFlight()">✓ Confirm Flight</button>
+        </div>
+      </div>
+
+      <!-- FOOD -->
+      <div class="page" id="pg-food">
+        <div class="sec-hdr"><h2>🍽 Food Court</h2><p>Order from our airport outlets — 18% GST included</p></div>
+        <div class="outlet-row">
+          <button class="outlet-pill active" onclick="switchOutlet('ae')">🍛 Airborne Eats</button>
+          <button class="outlet-pill" onclick="switchOutlet('jc')">☕ JetSet Cafe</button>
+          <button class="outlet-pill" onclick="switchOutlet('tt')">🥪 Travel Treats</button>
+        </div>
+        <div class="food-layout">
+          <div class="menu-grid" id="menuGrid"></div>
+          <div class="cart-box">
+            <div class="cart-title">🛒 Order Cart</div>
+            <div id="cartItems"><p class="cart-empty">No items added yet.</p></div>
+            <div class="cart-totals">
+              <div class="cart-tot-row"><span style="color:var(--text2)">Subtotal</span><span id="cSub">₹0</span></div>
+              <div class="cart-tot-row"><span style="color:var(--text3);font-size:.72rem">+ GST 18%</span><span style="color:var(--text2);font-size:.72rem" id="cGst">₹0</span></div>
+              <div class="cart-tot-row grand"><span>Payable</span><span id="cTotal">₹0</span></div>
+            </div>
+            <button class="btn-action btn-amber" style="width:100%;margin-top:1rem" onclick="confirmFood()">✓ Place Order</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LUGGAGE -->
+      <div class="page" id="pg-luggage">
+        <div class="sec-hdr"><h2>🧳 Extra Luggage</h2><p>Standard allowance: 15 kg free. Add more below.</p></div>
+        <div class="lugg-grid" id="luggGrid"></div>
+        <div class="alert alert-ok" id="luggMsg" style="display:none"></div>
+        <button class="btn-action btn-amber" onclick="confirmLuggage()">✓ Confirm Luggage</button>
+      </div>
+
+      <!-- CHECKOUT -->
+      <div class="page" id="pg-checkout">
+        <div id="checkoutMain">
+          <div class="sec-hdr"><h2>💳 Checkout</h2><p>Review your booking and complete payment</p></div>
+          <div class="bill-card">
+            <div class="bill-head">📋 Booking Summary</div>
+            <div class="bill-body" id="billBody"></div>
+            <div class="bill-grand">
+              <span class="bill-grand-lbl">Total Payable</span>
+              <span class="bill-grand-val" id="billGrand">₹0.00</span>
+            </div>
+          </div>
+
+          <div class="sec-hdr" style="margin-top:2rem"><h2 style="font-size:1.1rem">Select Payment Mode</h2></div>
+          <div class="pay-grid">
+            <div class="pay-card" onclick="pickPayment('cash',this)"><div class="pay-icon">💵</div><div class="pay-name">Cash</div><div class="pay-desc">PayCounter, Terminal 3</div></div>
+            <div class="pay-card" onclick="pickPayment('upi',this)"><div class="pay-icon">📱</div><div class="pay-name">UPI</div><div class="pay-desc">GPay · PhonePe · Paytm</div></div>
+            <div class="pay-card" onclick="pickPayment('card',this)"><div class="pay-icon">💳</div><div class="pay-name">Card</div><div class="pay-desc">Visa · Mastercard · RuPay</div></div>
+          </div>
+          <div id="upiIn" style="display:none;max-width:320px;margin-bottom:1rem"><div class="field"><label>UPI ID</label><input id="upiId" placeholder="name@bank"></div></div>
+          <div id="cardIn" style="display:none;max-width:420px;margin-bottom:1rem">
+            <div class="form-grid" style="grid-template-columns:1fr 1fr">
+              <div class="field"><label>Card Number</label><input placeholder="1234 5678 9012 3456" maxlength="19"></div>
+              <div class="field"><label>Expiry</label><input placeholder="MM/YY" maxlength="5"></div>
+              <div class="field"><label>CVV</label><input type="password" placeholder="•••" maxlength="3"></div>
+            </div>
+          </div>
+          <div class="alert alert-err" id="payErr" style="display:none">⚠ Please select a flight and payment method first.</div>
+          <button class="btn-action btn-mint" onclick="finalPay()">🚀 Confirm & Pay</button>
+        </div>
+
+        <!-- SUCCESS -->
+        <div id="successDiv" style="display:none">
+          <div class="success-wrap">
+            <div class="success-emoji">🎉</div>
+            <div class="success-h">Booking Confirmed!</div>
+            <div class="booking-ref" id="bRef">BMF-XXXXXX</div>
+            <p style="font-size:.82rem;color:var(--text2);margin-bottom:1.5rem">Thank you for choosing BookMyFlight! Your ticket to the skies is confirmed.</p>
+            <div class="feedback-box" id="fbBox">
+              <label>Share your experience (optional)</label>
+              <textarea id="fbText" placeholder="How was your booking experience?"></textarea>
+              <button class="btn-action btn-sky" style="margin-top:.75rem" onclick="submitFb()">Submit Feedback</button>
+            </div>
+            <div class="alert alert-ok" id="fbThanks" style="display:none;margin-bottom:1rem">✓ Thank you for the feedback!</div>
+            <button class="btn-action btn-ghost" style="margin-top:.5rem" onclick="newBooking()">↩ New Booking</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════
+const DOM_FLIGHTS = [
+  {id:1,  airline:"SkyVista Airlines",    num:"SVA1024", from:"New Delhi",     to:"Mumbai",        dep:"2024-10-05 08:15", arr:"2024-10-05 10:12"},
+  {id:2,  airline:"AeroWave Airlines",    num:"AWA2025", from:"Mumbai",        to:"New Delhi",     dep:"2024-10-07 09:47", arr:"2024-10-07 11:23"},
+  {id:3,  airline:"StellarAir",           num:"STA3036", from:"Chennai",       to:"Bangalore",     dep:"2024-10-10 10:03", arr:"2024-10-10 12:28"},
+  {id:4,  airline:"GlobalWind Airways",   num:"GWA4047", from:"Bangalore",     to:"Chennai",       dep:"2024-10-12 11:06", arr:"2024-10-12 13:32"},
+  {id:5,  airline:"AirZephyr",            num:"AZA5058", from:"Kolkata",       to:"Hyderabad",     dep:"2024-10-14 12:24", arr:"2024-10-14 14:49"},
+  {id:6,  airline:"CloudHorizon Flights", num:"CHF6069", from:"Hyderabad",     to:"Kolkata",       dep:"2024-10-16 13:35", arr:"2024-10-16 15:59"},
+  {id:7,  airline:"JetStream Aviation",   num:"JSA7071", from:"Pune",          to:"Goa",           dep:"2024-10-18 14:38", arr:"2024-10-18 16:45"},
+  {id:8,  airline:"NimbusSkyways",        num:"NSY8082", from:"Goa",           to:"Pune",          dep:"2024-10-20 16:02", arr:"2024-10-20 18:27"},
+  {id:9,  airline:"SkyQuest Airlines",    num:"SQA9093", from:"Ahmedabad",     to:"Chandigarh",    dep:"2024-10-22 17:41", arr:"2024-10-22 19:36"},
+  {id:10, airline:"AeroElite",            num:"AEL1010", from:"Chandigarh",    to:"Ahmedabad",     dep:"2024-10-25 18:13", arr:"2024-10-25 20:28"},
+  {id:11, airline:"SkyVista Airlines",    num:"SVA1111", from:"Lucknow",       to:"Surat",         dep:"2024-10-28 08:19", arr:"2024-10-28 10:35"},
+  {id:12, airline:"AeroWave Airlines",    num:"AWA2122", from:"Surat",         to:"Lucknow",       dep:"2024-11-01 09:21", arr:"2024-11-01 11:52"},
+  {id:13, airline:"StellarAir",           num:"STA3133", from:"Patna",         to:"Bhopal",        dep:"2024-11-03 10:14", arr:"2024-11-03 12:07"},
+  {id:14, airline:"GlobalWind Airways",   num:"GWA4144", from:"Bhopal",        to:"Patna",         dep:"2024-11-05 11:22", arr:"2024-11-05 13:03"},
+  {id:15, airline:"AirZephyr",            num:"AZA5155", from:"Visakhapatnam", to:"Vadodara",      dep:"2024-11-07 12:39", arr:"2024-11-07 14:26"},
+  {id:16, airline:"CloudHorizon Flights", num:"CHF6166", from:"Vadodara",      to:"Visakhapatnam", dep:"2024-11-09 13:53", arr:"2024-11-09 15:17"},
+  {id:17, airline:"JetStream Aviation",   num:"JSA7177", from:"Coimbatore",    to:"Indore",        dep:"2024-11-12 15:47", arr:"2024-11-12 17:10"},
+  {id:18, airline:"NimbusSkyways",        num:"NSY8188", from:"Indore",        to:"Coimbatore",    dep:"2024-11-14 16:05", arr:"2024-11-14 18:21"},
+  {id:19, airline:"SkyQuest Airlines",    num:"SQA9199", from:"Nagpur",        to:"Jaipur",        dep:"2024-11-16 17:18", arr:"2024-11-16 19:35"},
+  {id:20, airline:"AeroElite",            num:"AEL1020", from:"Jaipur",        to:"Nagpur",        dep:"2024-11-18 18:24", arr:"2024-11-18 20:39"},
+];
+
+const INTL_FLIGHTS = [
+  {id:1,  airline:"SkyVista Airlines",    num:"SVA1024", from:"New Delhi",  to:"London",    dep:"2024-11-01 08:15", arr:"2024-11-01 16:45"},
+  {id:2,  airline:"SkyVista Airlines",    num:"SVA2025", from:"London",     to:"New Delhi", dep:"2024-11-02 09:42", arr:"2024-11-02 18:22"},
+  {id:3,  airline:"AeroWave Airlines",    num:"AWA3036", from:"Mumbai",     to:"New York",  dep:"2024-11-03 10:33", arr:"2024-11-03 19:54"},
+  {id:4,  airline:"AeroWave Airlines",    num:"AWA4047", from:"New York",   to:"Mumbai",    dep:"2024-11-04 11:21", arr:"2024-11-05 07:56"},
+  {id:5,  airline:"StellarAir",           num:"STA5058", from:"Chennai",    to:"Singapore", dep:"2024-11-05 12:54", arr:"2024-11-05 18:44"},
+  {id:6,  airline:"StellarAir",           num:"STA6069", from:"Singapore",  to:"Chennai",   dep:"2024-11-06 13:37", arr:"2024-11-06 19:01"},
+  {id:7,  airline:"GlobalWind Airways",   num:"GWA7071", from:"New Delhi",  to:"Dubai",     dep:"2024-11-07 14:23", arr:"2024-11-07 17:55"},
+  {id:8,  airline:"GlobalWind Airways",   num:"GWA8082", from:"Dubai",      to:"New Delhi", dep:"2024-11-08 15:16", arr:"2024-11-08 18:37"},
+  {id:9,  airline:"AirZephyr",            num:"AZA9093", from:"Bangalore",  to:"Paris",     dep:"2024-11-09 16:42", arr:"2024-11-09 21:15"},
+  {id:10, airline:"AirZephyr",            num:"AZA1010", from:"Paris",      to:"Bangalore", dep:"2024-11-10 17:08", arr:"2024-11-11 02:22"},
+  {id:11, airline:"CloudHorizon Flights", num:"CHF1111", from:"Mumbai",     to:"Sydney",    dep:"2024-11-11 18:51", arr:"2024-11-12 14:33"},
+  {id:12, airline:"CloudHorizon Flights", num:"CHF2122", from:"Sydney",     to:"Mumbai",    dep:"2024-11-13 19:34", arr:"2024-11-14 15:12"},
+  {id:13, airline:"JetStream Aviation",   num:"JSA3133", from:"Goa",        to:"Bangkok",   dep:"2024-11-14 20:23", arr:"2024-11-15 02:01"},
+  {id:14, airline:"JetStream Aviation",   num:"JSA4144", from:"Bangkok",    to:"Goa",       dep:"2024-11-16 21:45", arr:"2024-11-17 05:32"},
+  {id:15, airline:"NimbusSkyways",        num:"NSY5155", from:"New Delhi",  to:"Tokyo",     dep:"2024-11-17 22:16", arr:"2024-11-18 06:41"},
+  {id:16, airline:"NimbusSkyways",        num:"NSY6166", from:"Tokyo",      to:"New Delhi", dep:"2024-11-19 23:52", arr:"2024-11-20 08:29"},
+  {id:17, airline:"SkyQuest Airlines",    num:"SQA7177", from:"Kolkata",    to:"Toronto",   dep:"2024-11-20 00:14", arr:"2024-11-20 12:55"},
+  {id:18, airline:"SkyQuest Airlines",    num:"SQA8188", from:"Toronto",    to:"Kolkata",   dep:"2024-11-21 01:23", arr:"2024-11-21 13:11"},
+  {id:19, airline:"AeroElite",            num:"AEL9199", from:"Hyderabad",  to:"London",    dep:"2024-11-22 02:35", arr:"2024-11-22 10:29"},
+  {id:20, airline:"AeroElite",            num:"AEL1020", from:"London",     to:"Hyderabad", dep:"2024-11-23 03:44", arr:"2024-11-23 11:57"},
+];
+
+const MENUS = {
+  ae:{label:"Airborne Eats", items:[
+    {code:"VB",   name:"Vegetable Biryani",           price:100},
+    {code:"PBMN", name:"Paneer Butter Masala w/Naan", price:120},
+    {code:"TGCR", name:"Thai Green Curry with Rice",  price:110},
+    {code:"VL",   name:"Vegetable Lasagna",           price:130},
+    {code:"FW",   name:"Falafel Wrap",                price:90},
+    {code:"MP",   name:"Margarita Pizza",             price:100},
+    {code:"VST",  name:"Veg Stir-fry w/Tofu",        price:110},
+    {code:"M",    name:"Mojito",                      price:70},
+    {code:"B",    name:"Buttermilk",                  price:30},
+    {code:"VPC",  name:"Virgin Pina Colada",          price:80},
+  ]},
+  jc:{label:"JetSet Cafe", items:[
+    {code:"PS",  name:"Paneer Sandwich",         price:60},
+    {code:"VQ",  name:"Vegetable Quiche",        price:70},
+    {code:"CS",  name:"Caprese Salad",           price:80},
+    {code:"VB",  name:"Veggie Burger",           price:90},
+    {code:"CC",  name:"Cheese Croissant",        price:50},
+    {code:"GS",  name:"Greek Salad",             price:70},
+    {code:"BCC", name:"Bagel with Cream Cheese", price:60},
+    {code:"C",   name:"Cappuccino",              price:60},
+    {code:"S",   name:"Smoothie",               price:80},
+    {code:"HC",  name:"Hot Chocolate",           price:70},
+  ]},
+  tt:{label:"Travel Treats", items:[
+    {code:"S",   name:"Samosa",                price:30},
+    {code:"SR",  name:"Spring Rolls",          price:50},
+    {code:"VP",  name:"Veg Puffs",             price:40},
+    {code:"PT",  name:"Paneer Tikka",          price:80},
+    {code:"B",   name:"Bruschetta",            price:60},
+    {code:"NS",  name:"Nachos with Salsa",     price:70},
+    {code:"HPB", name:"Hummus with Pita Bread",price:90},
+    {code:"ML",  name:"Mango Lassi",           price:50},
+    {code:"LIT", name:"Lemon Iced Tea",        price:40},
+    {code:"MC",  name:"Masala Chai",           price:20},
+  ]}
+};
+
+const LUGG_OPTS = [
+  {kg:0,  price:0,     label:"No Extra"},
+  {kg:2,  price:1499,  label:"Light"},
+  {kg:5,  price:3199,  label:"Standard"},
+  {kg:10, price:6199,  label:"Heavy"},
+  {kg:30, price:29999, label:"Max"},
+];
+
+const DOM_PRICES = {1:43199, 2:23099, 3:7699};
+const INTL_PRICES = {1:334949, 2:145989, 3:76099};
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let S = {
+  user:"test", pass:"wow",
+  passenger:{name:"",email:"",phone:"",passport:"",id:0},
+  fltType:"dom",
+  flight:null,
+  seatClass:null,
+  classPrice:0,
+  numPax:1,
+  ticketCost:0,
+  cart:{ae:{},jc:{},tt:{}},
+  foodTotal:0,
+  luggKg:0,
+  luggCost:0,
+  payMethod:null,
+  steps:[false,false,false,false,false],
+  currentOutlet:'ae',
+};
+
+const ri = (lo,hi) => lo + Math.floor(Math.random()*(hi-lo+1));
+const fmt = n => "₹" + Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+// ═══════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════
+function switchTab(t){
+  document.getElementById('loginForm').style.display = t==='login'?'block':'none';
+  document.getElementById('signupForm').style.display = t==='signup'?'block':'none';
+  document.getElementById('tabLogin').classList.toggle('active',t==='login');
+  document.getElementById('tabSignup').classList.toggle('active',t==='signup');
+}
+function doLogin(){
+  const u=document.getElementById('lu').value.trim();
+  const p=document.getElementById('lp').value.trim();
+  if(u===S.user && p===S.pass){
+    document.getElementById('loginErr').style.display='none';
+    document.getElementById('auth').style.display='none';
+    document.getElementById('app').style.display='flex';
+    document.getElementById('tbUser').textContent=u.toUpperCase();
+    initApp();
+  } else {
+    document.getElementById('loginErr').style.display='block';
+  }
+}
+function doSignUp(){
+  const u=document.getElementById('nu').value.trim();
+  const p=document.getElementById('np').value.trim();
+  if(!u||!p) return;
+  S.user=u; S.pass=p;
+  document.getElementById('signupOk').style.display='block';
+  setTimeout(()=>{ switchTab('login'); document.getElementById('lu').value=u; },1200);
+}
+function doLogout(){
+  document.getElementById('auth').style.display='flex';
+  document.getElementById('app').style.display='none';
+  resetAll();
+}
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+const PAGES = ['dashboard','passenger','flights','food','luggage','checkout'];
+function gotoPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('pg-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  if(id==='checkout') buildCheckout();
+  refreshDashboard();
+}
+function initApp(){
+  buildTable(DOM_FLIGHTS,'tblDom','dom');
+  buildTable(INTL_FLIGHTS,'tblIntl','intl');
+  buildMenuGrid('ae');
+  buildLuggGrid();
+  refreshDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// PASSENGER
+// ═══════════════════════════════════════════════════
+function savePassenger(){
+  const n=document.getElementById('pName').value.trim();
+  const e=document.getElementById('pEmail').value.trim();
+  const ph=document.getElementById('pPhone').value.trim();
+  const pp=document.getElementById('pPass').value.trim();
+  if(!n||!e||!ph||!pp){ alert('Please fill all fields.'); return; }
+  S.passenger={name:n,email:e,phone:ph,passport:pp,id:1000+ri(0,8999)};
+  S.steps[0]=true;
+  document.getElementById('pMsg').style.display='flex';
+  refreshDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// FLIGHTS
+// ═══════════════════════════════════════════════════
+function buildTable(flights, elId, type){
+  const t=document.getElementById(elId);
+  t.innerHTML=`<thead><tr>
+    <th>ID</th><th>Airline</th><th>Flight No</th>
+    <th>From</th><th>To</th><th>Departure</th><th>Arrival</th><th></th>
+  </tr></thead><tbody id="${elId}Body"></tbody>`;
+  const body=document.getElementById(elId+'Body');
+  flights.forEach(f=>{
+    const tr=document.createElement('tr');
+    tr.id=`tr-${type}-${f.id}`;
+    tr.innerHTML=`
+      <td><span class="flt-id">${f.id}</span></td>
+      <td>${f.airline}</td>
+      <td><span class="flt-num">${f.num}</span></td>
+      <td>${f.from}</td><td>${f.to}</td>
+      <td class="flt-time">${f.dep}</td>
+      <td class="flt-time">${f.arr}</td>
+      <td><button class="sel-btn" id="sb-${type}-${f.id}" onclick="pickFlight(${f.id},'${type}')">Select</button></td>`;
+    body.appendChild(tr);
+  });
+}
+
+function switchFltType(t){
+  S.fltType=t;
+  document.getElementById('secDom').style.display=t==='dom'?'block':'none';
+  document.getElementById('secIntl').style.display=t==='intl'?'block':'none';
+  document.getElementById('togDom').classList.toggle('active',t==='dom');
+  document.getElementById('togIntl').classList.toggle('active',t==='intl');
+}
+
+function pickFlight(id, type){
+  const list = type==='dom' ? DOM_FLIGHTS : INTL_FLIGHTS;
+  S.flight = list.find(f=>f.id===id);
+  S.fltType = type;
+  // clear old highlights
+  document.querySelectorAll('[id^="sb-"]').forEach(b=>{
+    b.classList.remove('picked'); b.textContent='Select';
+  });
+  document.querySelectorAll('tbody tr').forEach(r=>r.classList.remove('row-selected'));
+  const btn=document.getElementById(`sb-${type}-${id}`);
+  if(btn){ btn.classList.add('picked'); btn.textContent='Selected'; }
+  const row=document.getElementById(`tr-${type}-${id}`);
+  if(row) row.classList.add('row-selected');
+
+  // random seats
+  const fs=ri(1,15)*3, bs=ri(1,15)*4, es=ri(1,15)*7;
+  S.seats={1:fs,2:bs,3:es};
+  const prices = type==='dom' ? DOM_PRICES : INTL_PRICES;
+  S.seatClass=null; S.classPrice=0;
+
+  document.getElementById('seatInfo').textContent=
+    `${S.flight.airline} ${S.flight.num} · ${S.flight.from} → ${S.flight.to}`;
+
+  const cc=document.getElementById('classCards');
+  cc.innerHTML='';
+  [{cls:1,label:'First Class',price:prices[1],seats:fs},
+   {cls:2,label:'Business',   price:prices[2],seats:bs},
+   {cls:3,label:'Economy',    price:prices[3],seats:es}].forEach(sc=>{
+    const d=document.createElement('div');
+    d.className='class-card'; d.id='cc'+sc.cls;
+    d.innerHTML=`<div class="class-name">${sc.label}</div>
+      <div class="class-price">${fmt(sc.price)}</div>
+      <div class="class-avail">${sc.seats} seats available</div>`;
+    d.onclick=()=>pickClass(sc.cls, sc.price);
+    cc.appendChild(d);
+  });
+
+  document.getElementById('seatSec').style.display='block';
+  document.getElementById('tickCalc').style.display='none';
+  recalcTicket();
+}
+
+function pickClass(cls, price){
+  S.seatClass=cls; S.classPrice=price;
+  document.querySelectorAll('.class-card').forEach(c=>c.classList.remove('chosen'));
+  document.getElementById('cc'+cls).classList.add('chosen');
+  recalcTicket();
+}
+
+function recalcTicket(){
+  const n=parseInt(document.getElementById('numPax').value)||1;
+  S.numPax=n;
+  if(!S.seatClass){ document.getElementById('tickCalc').style.display='none'; return; }
+  const sub=S.classPrice*n, gst=sub*0.18, total=sub+gst;
+  S.pendingTicket=total;
+  const el=document.getElementById('tickCalc');
+  el.style.display='flex';
+  el.textContent=`${n} passenger(s) · ${fmt(sub)} + GST ${fmt(gst)} = ${fmt(total)}`;
+}
+
+function confirmFlight(){
+  if(!S.seatClass){ alert('Please select a seat class.'); return; }
+  S.ticketCost=S.pendingTicket;
+  S.steps[1]=true;
+  refreshDashboard();
+  alert(`✅ Flight confirmed!\n${S.flight.airline} ${S.flight.num}\n${S.flight.from} → ${S.flight.to}\nTotal: ${fmt(S.ticketCost)}`);
+  gotoPage('food');
+}
+
+// ═══════════════════════════════════════════════════
+// FOOD
+// ═══════════════════════════════════════════════════
+function switchOutlet(key){
+  S.currentOutlet=key;
+  document.querySelectorAll('.outlet-pill').forEach((p,i)=>{
+    p.classList.toggle('active',['ae','jc','tt'][i]===key);
+  });
+  buildMenuGrid(key);
+}
+
+function buildMenuGrid(key){
+  const m=MENUS[key]; const g=document.getElementById('menuGrid');
+  g.innerHTML='';
+  m.items.forEach(item=>{
+    const qty=(S.cart[key][item.code]||0);
+    const d=document.createElement('div');
+    d.className='menu-card';
+    d.innerHTML=`
+      <div class="menu-code">${item.code}</div>
+      <div class="menu-name">${item.name}</div>
+      <div class="menu-price">${fmt(item.price)}</div>
+      <div class="qty-row">
+        <button class="qty-btn" onclick="chgQty('${key}','${item.code}',-1)">−</button>
+        <span class="qty-num" id="q-${key}-${item.code}">${qty}</span>
+        <button class="qty-btn" onclick="chgQty('${key}','${item.code}',1)">+</button>
+      </div>`;
+    g.appendChild(d);
+  });
+}
+
+function chgQty(key, code, d){
+  const cur=S.cart[key][code]||0;
+  const nxt=Math.max(0,cur+d);
+  if(nxt===0) delete S.cart[key][code]; else S.cart[key][code]=nxt;
+  const el=document.getElementById(`q-${key}-${code}`);
+  if(el) el.textContent=nxt;
+  refreshCart();
+}
+
+function refreshCart(){
+  let sub=0; const lines=[];
+  ['ae','jc','tt'].forEach(key=>{
+    Object.entries(S.cart[key]).forEach(([code,qty])=>{
+      const item=MENUS[key].items.find(i=>i.code===code);
+      if(item){ sub+=item.price*qty; lines.push({name:item.name,qty,total:item.price*qty}); }
+    });
+  });
+  const gst=sub*.18, total=sub+gst;
+  const ci=document.getElementById('cartItems');
+  ci.innerHTML = lines.length===0
+    ? '<p class="cart-empty">No items added yet.</p>'
+    : lines.map(l=>`<div class="cart-line"><span>${l.qty}× ${l.name}</span><span>${fmt(l.total)}</span></div>`).join('');
+  document.getElementById('cSub').textContent=fmt(sub);
+  document.getElementById('cGst').textContent=fmt(gst);
+  document.getElementById('cTotal').textContent=fmt(total);
+  S.foodTotal=total;
+  refreshDashboard();
+}
+
+function confirmFood(){
+  S.steps[2]=true; refreshDashboard();
+  alert(`✅ Order placed! Total: ${fmt(S.foodTotal)}`);
+  gotoPage('luggage');
+}
+
+// ═══════════════════════════════════════════════════
+// LUGGAGE
+// ═══════════════════════════════════════════════════
+function buildLuggGrid(){
+  const g=document.getElementById('luggGrid'); g.innerHTML='';
+  LUGG_OPTS.forEach((opt,i)=>{
+    const d=document.createElement('div');
+    d.className='lugg-card'+(i===0?' picked':''); d.id='lc'+i;
+    d.innerHTML=`<div class="lugg-icon">🧳</div>
+      <div class="lugg-kg">${opt.kg} kg</div>
+      <div class="lugg-tag">${opt.label}</div>
+      <div class="lugg-price">${opt.price===0?'Free':fmt(opt.price)}</div>`;
+    d.onclick=()=>{
+      document.querySelectorAll('.lugg-card').forEach(c=>c.classList.remove('picked'));
+      d.classList.add('picked');
+      S.luggKg=opt.kg; S.luggCost=opt.price;
+    };
+    g.appendChild(d);
+  });
+  S.luggKg=0; S.luggCost=0;
+}
+
+function confirmLuggage(){
+  S.steps[3]=true; refreshDashboard();
+  const msg=document.getElementById('luggMsg');
+  msg.style.display='flex';
+  msg.textContent=S.luggCost===0
+    ? '✓ No extra luggage selected. Proceeding to checkout!'
+    : `✓ ${S.luggKg} kg extra luggage: ${fmt(S.luggCost)}`;
+  setTimeout(()=>gotoPage('checkout'),900);
+}
+
+// ═══════════════════════════════════════════════════
+// CHECKOUT
+// ═══════════════════════════════════════════════════
+function buildCheckout(){
+  const f=S.flight;
+  const body=document.getElementById('billBody');
+  if(!f){
+    body.innerHTML='<div class="alert alert-warn">⚠ No flight selected. Please complete booking steps first.</div>';
+    document.getElementById('billGrand').textContent='₹0.00';
+    return;
+  }
+  const grand=S.ticketCost+S.foodTotal+S.luggCost;
+  body.innerHTML=`
+    <div class="bill-row"><span class="bill-row-lbl">Passenger</span><span>${S.passenger.name||'—'}</span></div>
+    <div class="bill-row"><span class="bill-row-lbl">Passport / ID</span><span>${S.passenger.passport||'—'}</span></div>
+    <div class="bill-row"><span class="bill-row-lbl">Phone</span><span>${S.passenger.phone||'—'}</span></div>
+    <div class="bill-divider"></div>
+    <div class="bill-row"><span class="bill-row-lbl">Airline</span><span>${f.airline}</span></div>
+    <div class="bill-row"><span class="bill-row-lbl">Flight No</span><span style="color:var(--amber)">${f.num}</span></div>
+    <div class="bill-row"><span class="bill-row-lbl">Route</span><span>${f.from} → ${f.to}</span></div>
+    <div class="bill-row"><span class="bill-row-lbl">Departure</span><span>${f.dep}</span></div>
+    <div class="bill-row"><span class="bill-row-lbl">Arrival</span><span>${f.arr}</span></div>
+    <div class="bill-divider"></div>
+    <div class="bill-row"><span class="bill-row-lbl">✈ Flight Tickets</span><span>${fmt(S.ticketCost)}</span></div>
+    <div class="bill-row"><span class="bill-row-lbl">🍽 Food (incl. GST)</span><span>${fmt(S.foodTotal)}</span></div>
+    <div class="bill-row"><span class="bill-row-lbl">🧳 Extra Luggage</span><span>${fmt(S.luggCost)}</span></div>`;
+  document.getElementById('billGrand').textContent=fmt(grand);
+}
+
+function pickPayment(m, el){
+  S.payMethod=m;
+  document.querySelectorAll('.pay-card').forEach(c=>c.classList.remove('chosen'));
+  el.classList.add('chosen');
+  document.getElementById('upiIn').style.display=m==='upi'?'block':'none';
+  document.getElementById('cardIn').style.display=m==='card'?'block':'none';
+  document.getElementById('payErr').style.display='none';
+}
+
+function finalPay(){
+  if(!S.flight||!S.payMethod){
+    document.getElementById('payErr').style.display='flex'; return;
+  }
+  S.steps[4]=true; refreshDashboard();
+  const ref='BMF-'+Math.random().toString(36).substr(2,6).toUpperCase();
+  document.getElementById('bRef').textContent=ref;
+  document.getElementById('checkoutMain').style.display='none';
+  document.getElementById('successDiv').style.display='block';
+  document.getElementById('fbBox').style.display='block';
+  document.getElementById('fbThanks').style.display='none';
+}
+
+function submitFb(){
+  document.getElementById('fbBox').style.display='none';
+  document.getElementById('fbThanks').style.display='flex';
+}
+
+function newBooking(){
+  resetAll();
+  buildLuggGrid();
+  buildMenuGrid('ae');
+  document.querySelectorAll('[id^="sb-"]').forEach(b=>{b.classList.remove('picked');b.textContent='Select';});
+  document.querySelectorAll('tbody tr').forEach(r=>r.classList.remove('row-selected'));
+  document.getElementById('seatSec').style.display='none';
+  document.getElementById('checkoutMain').style.display='block';
+  document.getElementById('successDiv').style.display='none';
+  document.getElementById('pMsg').style.display='none';
+  document.getElementById('luggMsg').style.display='none';
+  document.getElementById('tickCalc').style.display='none';
+  refreshCart();
+  gotoPage('dashboard');
+}
+
+function resetAll(){
+  S.passenger={name:'',email:'',phone:'',passport:'',id:0};
+  S.flight=null; S.seatClass=null; S.classPrice=0;
+  S.numPax=1; S.ticketCost=0; S.pendingTicket=0;
+  S.cart={ae:{},jc:{},tt:{}}; S.foodTotal=0;
+  S.luggKg=0; S.luggCost=0; S.payMethod=null;
+  S.steps=[false,false,false,false,false];
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD REFRESH
+// ═══════════════════════════════════════════════════
+function refreshDashboard(){
+  document.getElementById('dFlight').textContent = S.flight ? S.flight.num : '—';
+  document.getElementById('dTicket').textContent = fmt(S.ticketCost);
+  document.getElementById('dFood').textContent   = fmt(S.foodTotal);
+  document.getElementById('dLugg').textContent   = fmt(S.luggCost);
+  document.getElementById('dTotal').textContent  = fmt(S.ticketCost+S.foodTotal+S.luggCost);
+
+  // step nodes
+  const doneCount=S.steps.filter(Boolean).length;
+  for(let i=0;i<5;i++){
+    const node=document.getElementById('sn'+i);
+    const conn=document.getElementById('sc'+i);
+    node.className='step-node'+(S.steps[i]?' done':i===doneCount?' active':'');
+    if(conn) conn.className='step-connector'+(S.steps[i]?' done':'');
+  }
+
+  // sidebar dots
+  const navIds=['passenger','flights','food','luggage','checkout'];
+  navIds.forEach((id,i)=>{
+    const el=document.getElementById('nav-'+id);
+    if(!el) return;
+    const isActive=el.classList.contains('active');
+    el.className='nav-item'+(isActive?' active':'')+(S.steps[i]?' done':'');
+    if(isActive) el.classList.add('active');
+  });
+
+  // progress bar
+  document.getElementById('progFill').style.width=(doneCount/5*100)+'%';
+}
+
+// boot
+refreshCart();
+</script>
+</body>
+</html>
